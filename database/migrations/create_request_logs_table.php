@@ -12,36 +12,26 @@ return new class extends Migration
     public function up(): void
     {
         $connection = config('gl-request-logger.connection');
+        $schema = $connection ? Schema::connection($connection) : Schema::connection();
         
-        if ($connection) {
-            Schema::connection($connection)->create('gl_request_logs', function (Blueprint $table) {
-                $table->id();
-                $table->string('method', 10);
-                $table->string('path');
-                $table->unsignedSmallInteger('status_code');
-                $table->string('ip', 45)->nullable();
-                $table->unsignedBigInteger('user_id')->nullable();
-                $table->json('headers')->nullable();
-                $table->json('body')->nullable();
-                $table->json('response_body')->nullable();
-                $table->float('duration_ms');
-                $table->timestamps();
-            });
-        } else {
-            Schema::create('gl_request_logs', function (Blueprint $table) {
-                $table->id();
-                $table->string('method', 10);
-                $table->string('path');
-                $table->unsignedSmallInteger('status_code');
-                $table->string('ip', 45)->nullable();
-                $table->unsignedBigInteger('user_id')->nullable();
-                $table->json('headers')->nullable();
-                $table->json('body')->nullable();
-                $table->json('response_body')->nullable();
-                $table->float('duration_ms');
-                $table->timestamps();
-            });
+        // Check if table already exists to prevent errors when migrations run multiple times
+        if ($schema->hasTable('gl_request_logs')) {
+            return;
         }
+        
+        $schema->create('gl_request_logs', function (Blueprint $table) {
+            $table->id();
+            $table->string('method', 10);
+            $table->string('path');
+            $table->unsignedSmallInteger('status_code');
+            $table->string('ip', 45)->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->json('headers')->nullable();
+            $table->json('body')->nullable();
+            $table->json('response_body')->nullable();
+            $table->float('duration_ms');
+            $table->timestamps();
+        });
     }
 
     /**

@@ -106,5 +106,40 @@ return [
     |
     */
     'per_page' => env('GL_REQUEST_LOGGER_PER_PAGE', env('REQUEST_LOGGER_PER_PAGE', 50)),
+
+    /*
+    |--------------------------------------------------------------------------
+    | UI Middleware
+    |--------------------------------------------------------------------------
+    |
+    | Middleware to apply to the log viewer UI routes. This allows you to
+    | protect the UI with authentication, authorization, or other middleware.
+    | Examples: ['auth', 'auth:sanctum', 'role:admin']
+    |
+    | Default: ['web'] (already applied, but you can add more)
+    |
+    */
+    'ui_middleware' => env('GL_REQUEST_LOGGER_UI_MIDDLEWARE') 
+        ? array_filter(array_map('trim', explode(',', env('GL_REQUEST_LOGGER_UI_MIDDLEWARE'))))
+        : ['auth'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Emails
+    |--------------------------------------------------------------------------
+    |
+    | Array of user email addresses that are allowed to access the log viewer UI.
+    | If this array is empty, all authenticated users can access the UI (subject
+    | to the ui_middleware configuration).
+    |
+    | If this array contains emails, only users with those email addresses will
+    | be allowed to access the UI, even if they pass the middleware checks.
+    |
+    | Example: ['admin@example.com', 'developer@example.com']
+    |
+    */
+    'allowed_emails' => env('GL_REQUEST_LOGGER_ALLOWED_EMAILS')
+        ? array_filter(array_map('trim', explode(',', env('GL_REQUEST_LOGGER_ALLOWED_EMAILS'))))
+        : [],
 ];
 

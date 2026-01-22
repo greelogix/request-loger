@@ -116,7 +116,7 @@ Once the middleware is registered and you've made some requests, visit:
 http://your-app-url/gl/request-logs
 ```
 
-The route is automatically registered by the package and requires the `web` middleware group.
+The route is automatically registered by the package and requires authentication by default. You can configure which middleware to use and restrict access to specific user emails (see [UI Security Configuration](#ui-security-configuration) below).
 
 ### Viewing Logs
 
@@ -316,6 +316,48 @@ Number of log entries to display per page in the log viewer UI. Default is 50.
 'per_page' => env('GL_REQUEST_LOGGER_PER_PAGE', 50),
 ```
 
+#### `ui_middleware`
+
+Array of middleware to apply to the log viewer UI routes. This allows you to protect the UI with authentication, authorization, or other middleware.
+
+**Default:** `['auth']` (requires authentication)
+
+**Examples:**
+- `['auth']` - Requires authentication (default)
+- `['auth', 'verified']` - Requires authentication and email verification
+- `['auth:sanctum']` - Requires Sanctum authentication
+- `['auth', 'role:admin']` - Requires authentication and admin role (if using a role package)
+- `[]` - No additional middleware (only `web` middleware is always applied)
+
+```php
+'ui_middleware' => env('GL_REQUEST_LOGGER_UI_MIDDLEWARE') 
+    ? explode(',', env('GL_REQUEST_LOGGER_UI_MIDDLEWARE'))
+    : ['auth'],
+```
+
+**Note:** The `web` middleware group is always applied automatically. This configuration allows you to add additional middleware on top of that.
+
+#### `allowed_emails`
+
+Array of user email addresses that are allowed to access the log viewer UI. If this array is empty, all authenticated users can access the UI (subject to the `ui_middleware` configuration).
+
+If this array contains emails, only users with those email addresses will be allowed to access the UI, even if they pass the middleware checks.
+
+**Default:** `[]` (all authenticated users can access)
+
+**Examples:**
+- `[]` - All authenticated users can access (default)
+- `['admin@example.com', 'developer@example.com']` - Only these specific emails can access
+- `['admin@example.com']` - Only the admin email can access
+
+```php
+'allowed_emails' => env('GL_REQUEST_LOGGER_ALLOWED_EMAILS')
+    ? explode(',', env('GL_REQUEST_LOGGER_ALLOWED_EMAILS'))
+    : [],
+```
+
+**Note:** When `allowed_emails` is configured, the user must be authenticated and their email must be in the allowed list. If the user is not authenticated or their email is not in the list, they will receive a 403 Forbidden error.
+
 ### Environment Variables
 
 You can configure the package using environment variables:
@@ -327,7 +369,14 @@ GL_REQUEST_LOGGER_CHANNEL=stack
 GL_REQUEST_LOGGER_SLOW_THRESHOLD=1000
 GL_REQUEST_LOGGER_LOG_HTML=true
 GL_REQUEST_LOGGER_PER_PAGE=50
+GL_REQUEST_LOGGER_UI_MIDDLEWARE=auth
+GL_REQUEST_LOGGER_ALLOWED_EMAILS=admin@example.com,developer@example.com
 ```
+
+**Note:** 
+- `GL_REQUEST_LOGGER_UI_MIDDLEWARE` should be a comma-separated list of middleware names (e.g., `auth,verified`)
+- `GL_REQUEST_LOGGER_ALLOWED_EMAILS` should be a comma-separated list of email addresses (e.g., `admin@example.com,developer@example.com`)
+- Leave `GL_REQUEST_LOGGER_ALLOWED_EMAILS` empty or unset to allow all authenticated users
 
 **Note:** Set `GL_REQUEST_LOGGER_CONNECTION` to a connection name (e.g., `logs`) to use a separate database, or leave it unset/empty to use the default connection.
 
@@ -390,6 +439,51 @@ You can exclude specific routes, URLs, or endpoints from being logged using mult
 
 By default, the request logger UI routes are excluded to prevent logging the log viewer itself.
 
+### UI Security
+
+The log viewer UI is protected by default with authentication middleware. You can further restrict access using two configuration options:
+
+#### Middleware Protection
+
+Configure which middleware should be applied to the UI routes using the `ui_middleware` configuration option. By default, the `auth` middleware is applied, requiring users to be authenticated.
+
+**Example:** Require authentication and email verification:
+```php
+'ui_middleware' => ['auth', 'verified'],
+```
+
+**Example:** Use Sanctum authentication:
+```php
+'ui_middleware' => ['auth:sanctum'],
+```
+
+**Example:** No additional middleware (only `web` middleware):
+```php
+'ui_middleware' => [],
+```
+
+#### Email-Based Access Control
+
+Restrict access to specific user emails using the `allowed_emails` configuration option. When configured, only users with email addresses in the allowed list can access the UI, even if they pass the middleware checks.
+
+**Example:** Allow only specific admin emails:
+```php
+'allowed_emails' => [
+    'admin@example.com',
+    'developer@example.com',
+],
+```
+
+**Example:** Allow all authenticated users (default):
+```php
+'allowed_emails' => [],
+```
+
+**Important:** 
+- Users must be authenticated to access the UI (unless you remove `auth` from `ui_middleware`)
+- If `allowed_emails` is configured, the user's email must be in the list
+- Users who don't meet the requirements will receive a 403 Forbidden error
+
 ## Publishing Assets
 
 ### Views
@@ -404,20 +498,65 @@ Views will be published to `resources/views/vendor/gl-request-logger/`.
 
 ## Troubleshooting
 
-### Migration Already Exists
+### Package Installation Conflicts
 
-If you get an error about the migration already existing, you can:
+If you encounter dependency conflicts during installation:
 
-1. Rollback and re-run:
+**Error:** `Your requirements could not be resolved to an installable set of packages`
+
+**Solution:** Ensure you're using Laravel 10 or 11. If you're on an older version, upgrade Laravel first:
+
+```bash
+composer require laravel/framework:^10.0
+# or for Laravel 11
+composer require laravel/framework:^11.0
+```
+
+Then try installing the package again:
+
+```bash
+composer require greelogix/request-logger
+```
+
+### Migration Already Exists / Table Already Exists
+
+If you get an error about the table already existing (e.g., `Base table or view already exists: 1050 Table 'gl_request_logs' already exists`):
+
+**This usually happens when:**
+- The migration runs twice (once from published migrations and once from package auto-loaded migrations)
+- You're using a custom database connection and the table exists on that connection
+
+**Solutions:**
+
+1. **If using a custom connection**, make sure the table exists on that connection. Check your connection:
+   ```bash
+   php artisan tinker
+   >>> config('gl-request-logger.connection')
+   >>> exit
+   ```
+
+2. **If the table exists on the wrong connection**, you can either:
+   - Drop and recreate on the correct connection:
+     ```bash
+     php artisan tinker
+     >>> Schema::connection('your-connection-name')->dropIfExists('gl_request_logs');
+     >>> exit
+     php artisan migrate
+     ```
+   - Or manually move the table to the correct database/connection
+
+3. **If migrations are running twice**, the package automatically checks if the table exists before creating it (as of the latest version). If you still see this error:
    ```bash
    php artisan migrate:rollback --step=1
    php artisan migrate
    ```
 
-2. Or manually drop the table and re-run migrations:
+4. **Manual cleanup** (if needed):
    ```bash
    php artisan tinker
    >>> Schema::dropIfExists('gl_request_logs');
+   >>> # Or for custom connection:
+   >>> Schema::connection('your-connection')->dropIfExists('gl_request_logs');
    >>> exit
    php artisan migrate
    ```
