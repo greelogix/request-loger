@@ -20,9 +20,17 @@ A Laravel package for logging HTTP requests with automatic sensitive data maskin
 
 ## Installation
 
-### For Local Development
+### Option 1: Install from Packagist (Recommended)
 
-If you're using this package locally (not from Packagist), add it as a path repository in your project's `composer.json`:
+If the package is published to Packagist, simply run:
+
+```bash
+composer require greelogix/request-logger
+```
+
+### Option 2: For Local Development
+
+If you're developing the package locally or it's not yet on Packagist, add it as a path repository in your project's `composer.json`:
 
 ```json
 {
@@ -54,18 +62,23 @@ Or using an absolute path:
 
 Then run:
 ```bash
-composer require greelogix/request-logger
+composer require greelogix/request-logger:dev-master
 ```
 
 **Important Notes:**
 - Use `"greelogix/request-logger": "dev-master"` as the version constraint when using path repositories
+- For Packagist installation, use `composer require greelogix/request-logger` (no version constraint needed)
 - `symlink` must be a **direct property** of the repository object, not nested in `options`
 - Adjust the path to match the relative or absolute path from your Laravel project to this package directory
 - If symlink doesn't work (e.g., on Windows without Developer Mode), Composer will fallback to copying files
 - If you have issues, try deleting `vendor/greelogix/request-logger` and running `composer clear-cache` before reinstalling
 - If you get a "minimum-stability" error, make sure you're using `dev-master` as the version constraint
 
-### 1. Install the Package
+---
+
+### After Installation (Both Methods)
+
+### 1. Run the Install Command
 
 Add the package to your Laravel project via Composer:
 

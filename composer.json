@@ -3,7 +3,20 @@
   "description": "Request logger with masking and UI for Laravel 10 and 11.",
   "type": "library",
   "license": "MIT",
-  "version": "dev-master",
+  "keywords": [
+    "laravel",
+    "request-logger",
+    "logging",
+    "http-logging",
+    "api-logging",
+    "request-tracking"
+  ],
+  "authors": [
+    {
+      "name": "GreeLogix",
+      "email": "packages@greelogix.com"
+    }
+  ],
   "require": {
     "php": "^8.1",
     "illuminate/support": "^10.0|^11.0"
@@ -20,6 +33,6 @@
       ]
     }
   },
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "prefer-stable": true
 }
