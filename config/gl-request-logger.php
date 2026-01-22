@@ -5,6 +5,18 @@ return [
 
     'driver' => env('GL_REQUEST_LOGGER_DRIVER', env('REQUEST_LOGGER_DRIVER', 'database')), // 'database' or 'file'
 
+    /*
+    |--------------------------------------------------------------------------
+    | Database Connection
+    |--------------------------------------------------------------------------
+    |
+    | Specify a custom database connection name to use for storing request logs.
+    | If set to null, the default database connection will be used.
+    | Make sure the connection is configured in your config/database.php file.
+    |
+    */
+    'connection' => env('GL_REQUEST_LOGGER_CONNECTION', null),
+
     'table' => 'gl_request_logs',
 
     'file_channel' => env('GL_REQUEST_LOGGER_CHANNEL', env('REQUEST_LOGGER_CHANNEL', env('LOG_CHANNEL', 'stack'))),

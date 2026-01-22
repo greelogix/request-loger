@@ -34,7 +34,7 @@ If you're using this package locally (not from Packagist), add it as a path repo
         }
     ],
     "require": {
-        "greelogix/request-logger": "*"
+        "greelogix/request-logger": "dev-master"
     }
 }
 ```
@@ -58,10 +58,12 @@ composer require greelogix/request-logger
 ```
 
 **Important Notes:**
+- Use `"greelogix/request-logger": "dev-master"` as the version constraint when using path repositories
 - `symlink` must be a **direct property** of the repository object, not nested in `options`
 - Adjust the path to match the relative or absolute path from your Laravel project to this package directory
 - If symlink doesn't work (e.g., on Windows without Developer Mode), Composer will fallback to copying files
 - If you have issues, try deleting `vendor/greelogix/request-logger` and running `composer clear-cache` before reinstalling
+- If you get a "minimum-stability" error, make sure you're using `dev-master` as the version constraint
 
 ### 1. Install the Package
 
@@ -205,6 +207,55 @@ Choose the logging driver: `database` or `file`.
 'driver' => env('GL_REQUEST_LOGGER_DRIVER', 'database'),
 ```
 
+#### `connection`
+
+**Optional.** Database connection name to use for storing logs. 
+
+- **Default:** `null` (uses your application's default database connection)
+- **No configuration needed:** The package works out of the box using your default database connection
+- **Optional feature:** Only set this if you want to use a separate database for logging
+
+```php
+'connection' => env('GL_REQUEST_LOGGER_CONNECTION', null),
+```
+
+**By default, you don't need to configure anything** - the package will automatically use your default database connection. You only need to set this if you want to use a separate database.
+
+**Example (Optional):** To use a separate database connection named `logs`:
+
+1. First, configure the connection in `config/database.php`:
+```php
+'connections' => [
+    'logs' => [
+        'driver' => 'mysql',
+        'host' => env('DB_LOGS_HOST', '127.0.0.1'),
+        'port' => env('DB_LOGS_PORT', '3306'),
+        'database' => env('DB_LOGS_DATABASE', 'logs'),
+        'username' => env('DB_LOGS_USERNAME', 'root'),
+        'password' => env('DB_LOGS_PASSWORD', ''),
+        // ... other connection settings
+    ],
+],
+```
+
+2. Then set the connection in your `.env` file:
+```env
+GL_REQUEST_LOGGER_CONNECTION=logs
+```
+
+3. When running migrations, make sure to specify the connection:
+```bash
+php artisan migrate --database=logs
+```
+
+Or update the migration file to use the configured connection (the package migration already handles this automatically).
+
+**Important Notes:**
+- **This is completely optional** - you can use the package without setting this value
+- By default, logs are stored in your main application database (the default connection)
+- Only configure a separate connection if you specifically want to isolate logs in a different database
+- If you change the connection after the initial setup, you'll need to run migrations on the new connection to create the table
+
 #### `table`
 
 Database table name for storing logs (when using database driver).
@@ -316,17 +367,31 @@ You can configure the package using environment variables:
 
 ```env
 GL_REQUEST_LOGGER_DRIVER=database
+GL_REQUEST_LOGGER_CONNECTION=null
 GL_REQUEST_LOGGER_CHANNEL=stack
 GL_REQUEST_LOGGER_SLOW_THRESHOLD=1000
 GL_REQUEST_LOGGER_LOG_HTML=true
 GL_REQUEST_LOGGER_PER_PAGE=50
 ```
 
+**Note:** Set `GL_REQUEST_LOGGER_CONNECTION` to a connection name (e.g., `logs`) to use a separate database, or leave it unset/empty to use the default connection.
+
 ## Logging Drivers
 
 ### Database Driver
 
 Stores logs in the `gl_request_logs` database table. This is the default driver and provides the best performance for viewing logs through the web UI.
+
+By default, logs are stored in your application's default database connection. **No additional configuration is required.**
+
+**Optional:** You can configure the package to use a separate database connection by setting the `connection` option. This is useful for:
+- Separating logs from your main application database
+- Using a dedicated database server for logging
+- Improving performance by isolating log queries
+
+**Note:** Using a separate database is completely optional. The package works perfectly fine with your default database connection.
+
+See the [Connection Configuration](#connection) section above for setup instructions (only if you want to use a separate database).
 
 ### File Driver
 

@@ -11,19 +11,37 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gl_request_logs', function (Blueprint $table) {
-            $table->id();
-            $table->string('method', 10);
-            $table->string('path');
-            $table->unsignedSmallInteger('status_code');
-            $table->string('ip', 45)->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->json('headers')->nullable();
-            $table->json('body')->nullable();
-            $table->json('response_body')->nullable();
-            $table->float('duration_ms');
-            $table->timestamps();
-        });
+        $connection = config('gl-request-logger.connection');
+        
+        if ($connection) {
+            Schema::connection($connection)->create('gl_request_logs', function (Blueprint $table) {
+                $table->id();
+                $table->string('method', 10);
+                $table->string('path');
+                $table->unsignedSmallInteger('status_code');
+                $table->string('ip', 45)->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->json('headers')->nullable();
+                $table->json('body')->nullable();
+                $table->json('response_body')->nullable();
+                $table->float('duration_ms');
+                $table->timestamps();
+            });
+        } else {
+            Schema::create('gl_request_logs', function (Blueprint $table) {
+                $table->id();
+                $table->string('method', 10);
+                $table->string('path');
+                $table->unsignedSmallInteger('status_code');
+                $table->string('ip', 45)->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->json('headers')->nullable();
+                $table->json('body')->nullable();
+                $table->json('response_body')->nullable();
+                $table->float('duration_ms');
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -31,6 +49,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('gl_request_logs');
+        $connection = config('gl-request-logger.connection');
+        
+        if ($connection) {
+            Schema::connection($connection)->dropIfExists('gl_request_logs');
+        } else {
+            Schema::dropIfExists('gl_request_logs');
+        }
     }
 };

@@ -14,6 +14,16 @@ class RequestLog extends Model
     protected $table = 'gl_request_logs';
 
     /**
+     * Get the database connection name for the model.
+     *
+     * @return string|null
+     */
+    public function getConnectionName()
+    {
+        return config('gl-request-logger.connection') ?: parent::getConnectionName();
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>

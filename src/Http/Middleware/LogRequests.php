@@ -192,9 +192,11 @@ class LogRequests
     protected function canUseDatabase(): bool
     {
         $table = config('gl-request-logger.table', 'gl_request_logs');
+        $connection = config('gl-request-logger.connection');
 
         try {
-            return DB::connection()->getSchemaBuilder()->hasTable($table);
+            $db = $connection ? DB::connection($connection) : DB::connection();
+            return $db->getSchemaBuilder()->hasTable($table);
         } catch (\Throwable $e) {
             return false;
         }
