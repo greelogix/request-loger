@@ -73,34 +73,50 @@ class InstallCommand extends Command
      */
     protected function updateConfigFile(string $configPath, array $existingConfig): void
     {
-        // Read the package's default config file as a string
+        // Read the package's default config file
         $packageConfigPath = __DIR__.'/../../config/gl-request-logger.php';
-        $packageConfigContent = File::get($packageConfigPath);
+        $packageConfigLines = file($packageConfigPath, FILE_IGNORE_NEW_LINES);
         
-        // Extract the new options section (UI Middleware and Allowed Emails)
-        // Match from the comment to the closing bracket and comma
-        if (preg_match('/(\/\*\s*UI Middleware.*?\*\/\s*\'ui_middleware\'.*?\[.*?\],\s*\/\*\s*Allowed Emails.*?\*\/\s*\'allowed_emails\'.*?\[.*?\],)/s', $packageConfigContent, $matches)) {
-            $newOptions = $matches[1];
-            
-            // Read existing config file
-            $existingContent = File::get($configPath);
-            
-            // Remove the closing bracket and any trailing whitespace
-            $existingContent = rtrim($existingContent);
-            if (substr($existingContent, -2) === '];') {
-                $existingContent = rtrim(substr($existingContent, 0, -2));
+        // Find the line number where UI Middleware comment starts
+        $startLine = null;
+        for ($i = 0; $i < count($packageConfigLines); $i++) {
+            if (strpos($packageConfigLines[$i], 'UI Middleware') !== false) {
+                $startLine = $i;
+                break;
             }
-            
-            // Append new options before the closing bracket
-            $updatedContent = $existingContent . ",\n\n" . $newOptions . "\n];\n";
-            
-            File::put($configPath, $updatedContent);
-            $this->info('Config file updated successfully with new options (ui_middleware, allowed_emails)!');
-        } else {
-            $this->warn('Could not extract new options from package config. Please add them manually.');
-            $this->line('Add these options to your config file:');
-            $this->line('  - ui_middleware');
-            $this->line('  - allowed_emails');
         }
+        
+        if ($startLine === null) {
+            $this->warn('Could not find new options in package config.');
+            $this->line('Please run: php artisan vendor:publish --tag=gl-request-logger-config --force');
+            return;
+        }
+        
+        // Extract lines from UI Middleware to the end (before closing bracket)
+        $newOptionsLines = array_slice($packageConfigLines, $startLine, -1);
+        $newOptions = implode("\n", $newOptionsLines);
+        
+        // Read existing config file
+        $existingContent = File::get($configPath);
+        
+        // Remove the closing bracket and any trailing whitespace/newlines
+        $existingContent = rtrim($existingContent);
+        
+        // Remove closing ]; if present
+        if (preg_match('/\];?\s*$/', $existingContent)) {
+            $existingContent = preg_replace('/\];?\s*$/', '', $existingContent);
+            $existingContent = rtrim($existingContent);
+        }
+        
+        // Ensure there's a comma at the end if the last line doesn't have one
+        if (substr($existingContent, -1) !== ',') {
+            $existingContent .= ',';
+        }
+        
+        // Append new options before the closing bracket
+        $updatedContent = $existingContent . "\n\n" . $newOptions . "\n];\n";
+        
+        File::put($configPath, $updatedContent);
+        $this->info('Config file updated successfully with new options (ui_middleware, allowed_emails)!');
     }
 }

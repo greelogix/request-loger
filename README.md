@@ -36,6 +36,12 @@ This will publish the configuration file and provide setup instructions:
 php artisan gl-request-logger:install
 ```
 
+**Note:** If you already have a config file, the install command will automatically add any missing new configuration options (like `ui_middleware` and `allowed_emails`) without overwriting your existing settings. To force overwrite the entire config file, use the `--force` flag:
+
+```bash
+php artisan gl-request-logger:install --force
+```
+
 ### 3. Publish and Run Migrations
 
 Publish the migration file:
