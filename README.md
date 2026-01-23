@@ -10,7 +10,6 @@ A Laravel package for logging HTTP requests with automatic sensitive data maskin
 - ⚡ Configurable logging driver (database or file)
 - 🚫 Configurable route exclusions
 - 📊 Request duration tracking
-- 👤 User tracking
 - 🗄️ Database and file logging support
 
 ## Requirements
